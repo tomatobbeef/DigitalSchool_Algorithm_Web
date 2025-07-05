@@ -53,7 +53,7 @@
               <el-slider v-model="algorithmParams.textureQuality"></el-slider>
             </el-form-item>
             <el-form-item>
-              <el-button type="primary" @click="runAlgorithm">运行算法</el-button>
+              <el-button type="success" @click="runAlgorithm">运行算法</el-button>
             </el-form-item>
           </el-form>
         </div>
