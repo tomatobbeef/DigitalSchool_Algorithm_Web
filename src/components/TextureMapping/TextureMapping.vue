@@ -2,7 +2,7 @@
     <div class="texture-mapping-container">
       <h2>纹理映射算法操作界面</h2>
       <el-card class="box-card">
-        <div slot="header" class="clearfix">
+        <div class="clearfix">
           <span>文件上传</span>
         </div>
         <div>
@@ -15,13 +15,13 @@
             list-type="text"
           >
             <el-button size="small" type="primary">点击上传</el-button>
-            <div slot="tip" class="el-upload__tip">支持上传.nvm、.ply、.jpg、.cam格式文件</div>
+            <div class="el-upload__tip">支持上传.nvm、.ply、.jpg、.cam格式文件</div>
           </el-upload>
         </div>
       </el-card>
   
       <el-card class="box-card">
-        <div slot="header" class="clearfix">
+        <div class="clearfix">
           <span>参数配置</span>
         </div>
         <div>
@@ -60,7 +60,7 @@
       </el-card>
   
       <el-card class="box-card">
-        <div slot="header" class="clearfix">
+        <div class="clearfix">
           <span>结果展示</span>
         </div>
         <div>
