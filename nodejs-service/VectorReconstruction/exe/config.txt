@@ -1,0 +1,14 @@
+input D:\webproject\DigitalSchool_Algorithm_Web\nodejs-service\uploads\1751904003847.ply
+output D:\webproject\DigitalSchool_Algorithm_Web\nodejs-service\VectorReconstruction\output\test\output.ply
+nmin 50
+epsilon 0.3000
+tolerance_angle 5
+tolerance_coplanarity 0.0300
+K 1
+lambda 0.3000
+regularize
+save_alpha_shapes
+save_convex_hulls
+save_partition_ply
+save_partition_kgraph
+verbose

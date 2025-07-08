@@ -1,0 +1,14 @@
+input hilbert_cube2_pds_100k_r05.ply
+output res_hilbert.ply
+K 1
+epsilon 0.423
+nmin 50
+lambda 0.5
+normal_threshold 0.85
+regularize
+tolerance_angle 5
+tolerance_coplanarity 0.5
+save_alpha_shapes
+save_convex_hulls
+save_partition_ply
+save_partition_kgraph

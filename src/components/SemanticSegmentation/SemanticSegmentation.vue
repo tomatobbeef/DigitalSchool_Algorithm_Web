@@ -145,8 +145,8 @@ export default {
     };
 
     onMounted(() => {
-      initThree();
-      loadPLYModel('static/semanticSegmentation/semantic_2.ply');
+      // initThree();
+      // loadPLYModel('static/semanticSegmentation/semantic_2.ply');
     });
 
     return {

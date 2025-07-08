@@ -1,0 +1,3 @@
+input fertility_coarse_input.vg
+output fert.ply
+K 1

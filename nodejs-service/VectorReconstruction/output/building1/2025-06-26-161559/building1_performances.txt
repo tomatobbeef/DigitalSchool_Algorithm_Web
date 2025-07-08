@@ -1,0 +1,18 @@
+** Partition
+Vertices : 2640
+Edges : 6314
+Facets : 4767
+Polyhedrons : 1092
+
+** Kinetic algorithm
+Initialization (in s.) : 1.47
+Unstacking events (in s.) : 12.658
+Building partition (in s.) : 0.788
+Deleting structure (in s.) : 0.005
+Total running time (in s.) : 14.984
+Memory peak (in MB.) : 95.5273
+
+** Surface
+Vertices : 268
+Edges : 415
+Facets : 151
