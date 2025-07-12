@@ -13,6 +13,7 @@
           :file-list="uploadData.pointCloudFileList"
           list-type="text"
           :auto-upload="false"
+          accept=".ply"
         >
           <el-button size="small" type="primary">上传点云数据文件</el-button>
           <div class="el-upload__tip">支持上传ply格式文件</div>
@@ -103,6 +104,7 @@ import { onMounted, onUnmounted } from 'vue';
 import * as THREE from 'three';
 import { PLYLoader } from 'three/examples/jsm/loaders/PLYLoader.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { ElMessage } from 'element-plus';
 export default {
   name: "VectorReconstruction",
   setup() {
@@ -136,23 +138,47 @@ export default {
     };
 
     const loadPLYModel = (url) => {
+      console.log('尝试加载PLY文件:', url);
       const loader = new PLYLoader();
-      loader.load(url, (geometry) => {
-        // 使用 Mesh 来渲染模型
-        const material = new THREE.MeshStandardMaterial({ vertexColors: true });
-        const mesh = new THREE.Mesh(geometry, material);
-
-        scene.add(mesh);
-
-        // 调整相机和控件的中心位置
-        const box = new THREE.Box3().setFromObject(mesh);
-        const size = box.getSize(new THREE.Vector3());
-        const center = box.getCenter(new THREE.Vector3());
-        const maxDim = Math.max(size.x, size.y, size.z);
-
-        camera.position.set(center.x, center.y, maxDim * 1.5);
-        controls.target.set(center.x, center.y, center.z);
-        controls.update();
+      
+      return new Promise((resolve, reject) => {
+        loader.load(
+          url, 
+          (geometry) => {
+            console.log('PLY文件加载成功:', geometry);
+            // 检查颜色属性
+            console.log('geometry.attributes.color:', geometry.attributes.color);
+            // 使用 MeshBasicMaterial 便于调试颜色
+            const material = new THREE.MeshBasicMaterial({ vertexColors: true });
+            const mesh = new THREE.Mesh(geometry, material);
+            scene.add(mesh);
+            // 增加线框显示
+            const wireframe = new THREE.WireframeGeometry(geometry);
+            const line = new THREE.LineSegments(wireframe, new THREE.LineBasicMaterial({ color: 0x000000 }));
+            scene.add(line);
+            // 增加半球光源
+            const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 1.2);
+            scene.add(hemiLight);
+            // 调整相机和控件的中心位置
+            const box = new THREE.Box3().setFromObject(mesh);
+            const size = box.getSize(new THREE.Vector3());
+            const center = box.getCenter(new THREE.Vector3());
+            const maxDim = Math.max(size.x, size.y, size.z);
+            camera.position.set(center.x, center.y, maxDim * 1.5);
+            controls.target.set(center.x, center.y, center.z);
+            controls.update();
+            console.log('模型已添加到场景');
+            resolve();
+          },
+          (progress) => {
+            console.log('加载进度:', progress);
+          },
+          (error) => {
+            console.error('PLY文件加载失败:', error);
+            alert('PLY文件加载失败: ' + error.message);
+            reject(error);
+          }
+        );
       });
     };
 
@@ -170,29 +196,40 @@ export default {
     const isReady = ref(false);
     const inputfile = ref('');
     const handlePointCloudChange = (file, fileList) => {
+      console.log('文件选择变化:', file, fileList);
       uploadData.value.pointCloudFileList = fileList;
+      console.log('更新后的文件列表:', uploadData.value.pointCloudFileList);
     };
     const uploadFile = async () => {
+      console.log('开始上传文件...');
+      console.log('当前文件列表:', uploadData.value.pointCloudFileList);
+      
       // 获取文件列表中的第一个文件
       const file = uploadData.value.pointCloudFileList[0]?.raw;
 
       if (!file) {
+        console.log('没有选择文件');
         alert("请先选择文件");
         return;
       }
 
-      
+      console.log('选择的文件:', file);
+      console.log('文件名称:', file.name);
+      console.log('文件大小:', file.size);
+      console.log('文件类型:', file.type);
 
       const formData = new FormData();
       formData.append("file", file);
 
       try {
+        console.log('发送上传请求到: http://localhost:3000/upload');
         const response = await axios.post("http://localhost:3000/upload", formData, {
           headers: {
             "Content-Type": "multipart/form-data"
           }
         });
 
+        console.log('服务器响应:', response);
         // 假设后端返回的文件地址在 response.data.url 中
         const fileUrl = response.data.url;
         console.log("文件地址：", fileUrl);
@@ -201,7 +238,8 @@ export default {
         return fileUrl
       } catch (error) {
         console.error("文件上传失败：", error);
-        alert("文件上传失败");
+        console.error("错误详情:", error.response?.data || error.message);
+        alert("文件上传失败: " + (error.response?.data?.error || error.message));
         return ' '
       }
     };
@@ -219,7 +257,7 @@ export default {
             // 处理响应数据
             console.log('响应数据：', response.data);
             if (response.data.process) {
-              process = response.data.process
+              process.value = response.data.process
             } else {
               console.log('未获取到进程输出');
             }
@@ -237,13 +275,22 @@ export default {
 
     ws.onmessage = (event) => {
       const message = JSON.parse(event.data);
-      console.log(message)
+      console.log('WebSocket消息:', message);
       if (message.type === "done") {
         // 如果是任务完成消息
-        console.log("加载中")
+        console.log("算法执行完成");
         process.value = "已完成";
         initThree();
-        loadPLYModel('nodejs-service/VectorReconstruction/output/test/output.ply');
+        
+        // 尝试加载PLY文件，使用绝对路径
+        const plyPath = '/nodejs-service/VectorReconstruction/output/test/output.ply';
+        console.log('尝试加载PLY文件:', plyPath);
+        
+        // 如果PLY文件不存在，尝试加载其他格式的文件
+        loadPLYModel(plyPath).catch(() => {
+          console.log('PLY文件不存在，尝试加载其他格式文件...');
+          // 这里可以添加加载其他格式文件的逻辑
+        });
       } 
       else{
         // 普通日志信息
