@@ -1,64 +1,129 @@
 <template>
     <div class="texture-mapping-container">
       <h2>纹理映射算法操作界面</h2>
+      
+      <!-- 文件上传区域 -->
       <el-card class="box-card">
         <div class="clearfix">
           <span>文件上传</span>
         </div>
         <div>
+          <!-- JPG文件上传 -->
           <el-upload
             class="upload-demo"
-            action="https://jsonplaceholder.typicode.com/posts/"
-            :on-preview="handlePreview"
-            :on-remove="handleRemove"
-            :file-list="fileList"
+            :action="uploadUrl"
+            :on-success="handleJpgUploadSuccess"
+            :on-error="handleUploadError"
+            :before-upload="beforeJpgUpload"
+            :file-list="jpgFileList"
             list-type="text"
+            multiple
+            accept=".jpg,.jpeg"
           >
-            <el-button size="small" type="primary">点击上传</el-button>
-            <div class="el-upload__tip">支持上传.nvm、.ply、.jpg、.cam格式文件</div>
+            <el-button size="small" type="primary">上传JPG照片</el-button>
+            <div class="el-upload__tip">支持上传.jpg格式的照片文件（最多150张）</div>
+          </el-upload>
+          
+          <!-- CAM文件上传 -->
+          <el-upload
+            class="upload-demo"
+            :action="uploadUrl"
+            :on-success="handleCamUploadSuccess"
+            :on-error="handleUploadError"
+            :before-upload="beforeCamUpload"
+            :file-list="camFileList"
+            list-type="text"
+            multiple
+            accept=".cam"
+            style="margin-top: 20px;"
+          >
+            <el-button size="small" type="primary">上传CAM相机参数</el-button>
+            <div class="el-upload__tip">支持上传.cam格式的相机参数文件（最多150个）</div>
+          </el-upload>
+          
+          <!-- PLY文件上传 -->
+          <el-upload
+            class="upload-demo"
+            :action="uploadUrl"
+            :on-success="handlePlyUploadSuccess"
+            :on-error="handleUploadError"
+            :before-upload="beforePlyUpload"
+            :file-list="plyFileList"
+            list-type="text"
+            accept=".ply"
+            style="margin-top: 20px;"
+          >
+            <el-button size="small" type="primary">上传PLY模型</el-button>
+            <div class="el-upload__tip">支持上传.ply格式的3D模型文件（1个）</div>
           </el-upload>
         </div>
       </el-card>
-  
+
+      <!-- Texrecon参数配置 -->
       <el-card class="box-card">
         <div class="clearfix">
-          <span>参数配置</span>
+          <span>Texrecon参数配置</span>
         </div>
         <div>
           <el-form label-width="150px">
-            <el-form-item label="映射方法">
-              <el-select v-model="algorithmParams.method_type" placeholder="请选择映射方法">
-                <el-option label="MRF" value="mrf"></el-option>
-                <el-option label="Projection" value="projection"></el-option>
-                <el-option label="SubMRF" value="submrf"></el-option>
+            <el-form-item label="数据项类型">
+              <el-select v-model="texreconParams.data_term" placeholder="请选择数据项类型">
+                <el-option label="Area" value="area"></el-option>
+                <el-option label="GMI" value="gmi"></el-option>
               </el-select>
             </el-form-item>
-            <el-form-item label="MRF库选择">
-              <el-select v-model="algorithmParams.mrf_call_lib" placeholder="请选择MRF库">
-                <el-option label="MAPMAP" value="mapmap"></el-option>
-                <el-option label="OpenMVS" value="openmvs"></el-option>
+            <el-form-item label="光滑性约束">
+              <el-select v-model="texreconParams.smoothness_term" placeholder="请选择光滑性约束">
+                <el-option label="Potts" value="potts"></el-option>
               </el-select>
             </el-form-item>
-            <el-form-item label="异常点移除策略">
-              <el-select v-model="algorithmParams.outlier_removal" placeholder="请选择异常点移除策略">
+            <el-form-item label="离群值移除">
+              <el-select v-model="texreconParams.outlier_removal" placeholder="请选择离群值移除">
                 <el-option label="None" value="none"></el-option>
-                <el-option label="Gauss Clamping" value="gauss_clamping"></el-option>
                 <el-option label="Gauss Damping" value="gauss_damping"></el-option>
+                <el-option label="Gauss Clamping" value="gauss_clamping"></el-option>
               </el-select>
             </el-form-item>
-            <el-form-item label="稀疏模型标识">
-              <el-switch v-model="algorithmParams.sparse_model"></el-switch>
+            <el-form-item label="色调映射">
+              <el-select v-model="texreconParams.tone_mapping" placeholder="请选择色调映射">
+                <el-option label="None" value="none"></el-option>
+                <el-option label="Gamma" value="gamma"></el-option>
+              </el-select>
             </el-form-item>
-            <el-form-item label="纹理质量">
-              <el-slider v-model="algorithmParams.textureQuality"></el-slider>
+            <el-form-item label="跳过几何可见性测试">
+              <el-switch v-model="texreconParams.skip_geometric_visibility_test"></el-switch>
+            </el-form-item>
+            <el-form-item label="跳过全局缝隙优化">
+              <el-switch v-model="texreconParams.skip_global_seam_leveling"></el-switch>
+            </el-form-item>
+            <el-form-item label="跳过局部缝隙优化">
+              <el-switch v-model="texreconParams.skip_local_seam_leveling"></el-switch>
+            </el-form-item>
+            <el-form-item label="输出各步骤耗时">
+              <el-switch v-model="texreconParams.write_timings"></el-switch>
+            </el-form-item>
+            <el-form-item label="不输出中间结果">
+              <el-switch v-model="texreconParams.no_intermediate_results"></el-switch>
             </el-form-item>
             <el-form-item>
-              <el-button type="success" @click="runAlgorithm">运行算法</el-button>
+              <el-button type="success" @click="runTexreconAlgorithm" :loading="isProcessing">运行Texrecon算法</el-button>
             </el-form-item>
           </el-form>
         </div>
       </el-card>
-  
+
+      <!-- 处理进度 -->
+      <el-card class="box-card" v-if="isProcessing">
+        <div class="clearfix">
+          <span>处理进度</span>
+        </div>
+        <div>
+          <el-progress :percentage="progressPercentage" :status="progressStatus"></el-progress>
+          <div class="progress-message">{{ progressMessage }}</div>
+        </div>
+      </el-card>
+
+      <!-- 结果展示 -->
       <el-card class="box-card">
         <div class="clearfix">
           <span>结果展示</span>
@@ -69,7 +134,7 @@
       </el-card>
     </div>
   </template>
-  
+
   <script>
   import * as THREE from 'three'
   import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js'
@@ -81,57 +146,239 @@
   export default {
     data() {
       return {
-        fileList: [],
-        algorithmParams: {
-          method_type: 'mrf',
-          mrf_call_lib: 'mapmap',
-          outlier_removal: 'none',
-          sparse_model: false,
-          textureQuality: 50
+        uploadUrl: 'http://localhost:3000/upload',
+        jpgFileList: [],
+        camFileList: [],
+        plyFileList: [],
+        uploadedFiles: {
+          jpg: [],
+          cam: [],
+          ply: null
         },
+        texreconParams: {
+          data_term: 'gmi',
+          smoothness_term: 'potts',
+          outlier_removal: 'none',
+          tone_mapping: 'none',
+          skip_geometric_visibility_test: false,
+          skip_global_seam_leveling: false,
+          skip_local_seam_leveling: false,
+          write_timings: false,
+          no_intermediate_results: false
+        },
+        isProcessing: false,
+        progressPercentage: 0,
+        progressStatus: '',
+        progressMessage: '',
         // Three.js 相关变量
         currentModelPath: {
           obj: '/model/vis2mesh_sim_MakeDense.obj',
           mtl: '/model/vis2mesh_sim_MakeDense.mtl'
-        }
+        },
+        websocket: null
       }
     },
     mounted() {
       this.$nextTick(() => {
         this.initThreeJS()
         this.loadOBJModel()
+        this.initWebSocket()
       })
     },
     beforeDestroy() {
       this.cleanup()
+      if (this.websocket) {
+        this.websocket.close()
+      }
     },
     methods: {
-      handleRemove(file, fileList) {
-        console.log(file, fileList)
-      },
-      handlePreview(file) {
-        console.log(file)
-      },
-      runAlgorithm() {
-        // 这里可以添加运行算法的逻辑
-        console.log('运行纹理映射算法', this.algorithmParams)
-        
-        // 模拟算法运行后生成新的模型文件
-        // 在实际应用中，这里会调用后端API处理算法，然后返回新的obj/mtl文件路径
-        setTimeout(() => {
-          // 模拟算法完成后更新模型路径
-          this.currentModelPath = {
-            obj: '/model/vis2mesh_sim_MakeDense.obj', // 这里应该是算法生成的新模型路径
-            mtl: '/model/vis2mesh_sim_MakeDense.mtl'  // 这里应该是算法生成的新材质路径
-          }
-          
-          // 重新加载模型
-          this.loadOBJModel()
-          
-          console.log('算法完成，模型已更新')
-        }, 2000) // 模拟2秒的算法处理时间
+      // 文件上传相关方法
+      beforeJpgUpload(file) {
+        const isJPG = file.type === 'image/jpeg' || file.name.endsWith('.jpg') || file.name.endsWith('.jpeg')
+        const isLt100M = file.size / 1024 / 1024 < 100
+        if (!isJPG) {
+          this.$message.error('只能上传JPG格式的文件!')
+          return false
+        }
+        if (!isLt100M) {
+          this.$message.error('文件大小不能超过100MB!')
+          return false
+        }
+        if (this.jpgFileList.length >= 150) {
+          this.$message.error('最多只能上传150张JPG照片!')
+          return false
+        }
+        return true
       },
       
+      beforeCamUpload(file) {
+        const isCAM = file.name.endsWith('.cam')
+        const isLt1M = file.size / 1024 / 1024 < 1
+        if (!isCAM) {
+          this.$message.error('只能上传CAM格式的文件!')
+          return false
+        }
+        if (!isLt1M) {
+          this.$message.error('文件大小不能超过1MB!')
+          return false
+        }
+        if (this.camFileList.length >= 150) {
+          this.$message.error('最多只能上传150个CAM文件!')
+          return false
+        }
+        return true
+      },
+      
+      beforePlyUpload(file) {
+        const isPLY = file.name.endsWith('.ply')
+        const isLt100M = file.size / 1024 / 1024 < 100
+        if (!isPLY) {
+          this.$message.error('只能上传PLY格式的文件!')
+          return false
+        }
+        if (!isLt100M) {
+          this.$message.error('文件大小不能超过100MB!')
+          return false
+        }
+        if (this.plyFileList.length >= 1) {
+          this.$message.error('只能上传1个PLY文件!')
+          return false
+        }
+        return true
+      },
+      
+      handleJpgUploadSuccess(response, file, fileList) {
+        this.uploadedFiles.jpg.push({
+          name: file.name,
+          path: response.url
+        })
+        this.$message.success(`JPG文件 ${file.name} 上传成功`)
+      },
+      
+      handleCamUploadSuccess(response, file, fileList) {
+        this.uploadedFiles.cam.push({
+          name: file.name,
+          path: response.url
+        })
+        this.$message.success(`CAM文件 ${file.name} 上传成功`)
+      },
+      
+      handlePlyUploadSuccess(response, file, fileList) {
+        this.uploadedFiles.ply = {
+          name: file.name,
+          path: response.url
+        }
+        this.$message.success(`PLY文件 ${file.name} 上传成功`)
+      },
+      
+      handleUploadError(err, file, fileList) {
+        this.$message.error(`文件 ${file.name} 上传失败`)
+      },
+
+      // WebSocket初始化
+      initWebSocket() {
+        this.websocket = new WebSocket('ws://localhost:8081')
+        
+        this.websocket.onopen = () => {
+          console.log('WebSocket连接已建立')
+        }
+        
+        this.websocket.onmessage = (event) => {
+          const data = JSON.parse(event.data)
+          if (data.type === 'process') {
+            this.progressMessage = data.message
+            this.progressPercentage = Math.min(this.progressPercentage + 5, 95)
+          } else if (data.type === 'done') {
+            this.progressPercentage = 100
+            this.progressStatus = 'success'
+            this.progressMessage = '算法处理完成'
+            this.isProcessing = false
+            this.loadGeneratedModel()
+          } else if (data.type === 'error') {
+            this.handleWebSocketError(data.message)
+          } else if (data.type === 'warning') {
+            this.$message.warning(data.message)
+          }
+        }
+        
+        this.websocket.onerror = (error) => {
+          console.error('WebSocket错误:', error)
+        }
+        
+        this.websocket.onclose = () => {
+          console.log('WebSocket连接已关闭')
+        }
+      },
+
+      // 运行Texrecon算法
+      async runTexreconAlgorithm() {
+        // 检查文件上传情况
+        if (this.uploadedFiles.jpg.length === 0) {
+          this.$message.error('请至少上传一张JPG照片')
+          return
+        }
+        if (this.uploadedFiles.cam.length === 0) {
+          this.$message.error('请至少上传一个CAM相机参数文件')
+          return
+        }
+        if (!this.uploadedFiles.ply) {
+          this.$message.error('请上传PLY模型文件')
+          return
+        }
+        
+        this.isProcessing = true
+        this.progressPercentage = 0
+        this.progressStatus = ''
+        this.progressMessage = '开始处理...'
+        
+        try {
+          const response = await fetch('http://localhost:3000/run_texrecon', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              jpgFiles: this.uploadedFiles.jpg,
+              camFiles: this.uploadedFiles.cam,
+              plyFile: this.uploadedFiles.ply,
+              params: this.texreconParams
+            })
+          })
+          
+          if (!response.ok) {
+            throw new Error('算法启动失败')
+          }
+          
+          this.$message.success('算法已启动，请等待处理完成')
+          
+        } catch (error) {
+          console.error('运行算法失败:', error)
+          this.$message.error('算法启动失败: ' + error.message)
+          this.isProcessing = false
+        }
+      },
+
+      // 加载生成的模型
+      loadGeneratedModel() {
+        // 更新模型路径为算法生成的文件
+        this.currentModelPath = {
+          obj: '/output/texrecon.obj',
+          mtl: '/output/texrecon.mtl'
+        }
+        
+        // 重新加载模型
+        this.loadOBJModel()
+        this.$message.success('模型已更新')
+      },
+
+      // 处理WebSocket错误消息
+      handleWebSocketError(message) {
+        this.progressStatus = 'exception'
+        this.progressMessage = '处理失败: ' + message
+        this.isProcessing = false
+        this.$message.error('算法处理失败: ' + message)
+      },
+
       // Three.js 相关方法
       initThreeJS() {
         const canvas = document.getElementById('resultCanvas')
@@ -347,9 +594,21 @@
     display: flex;
     flex-direction: column;
     gap: 20px;
+    padding: 20px;
   }
   .box-card {
     width: 100%;
   }
-
+  .upload-demo {
+    margin-bottom: 20px;
+  }
+  .progress-message {
+    margin-top: 10px;
+    font-size: 14px;
+    color: #666;
+  }
+  #resultCanvas {
+    border: 1px solid #ddd;
+    border-radius: 4px;
+  }
   </style>
